@@ -372,7 +372,7 @@ function! s:gv(bang, visual, line1, line2, args) abort
       let [opts1, paths1] = s:log_opts(fugitive_repo, a:bang, a:visual, a:line1, a:line2)
       let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
       let log_opts = opts1 + opts2 + paths1 + paths2
-      let repo_short_name = fnamemodify(substitute(fugitive_repo.dir(), '[\\/]\.git[\\/]\?$', '', ''), ':t')
+      let repo_short_name = fnamemodify(fugitive_repo.tree(), ':t')
       let bufname = repo_short_name.' '.join(log_opts)
 
       call s:setup(bufname, git_dir, fugitive_repo.config('remote.origin.url'))
