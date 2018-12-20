@@ -172,6 +172,7 @@ function! s:maps()
   nnoremap <silent> <buffer> <cr> :call <sid>open(0)<cr>
   nnoremap <silent> <buffer> o    :call <sid>open(0)<cr>
   nnoremap <silent> <buffer> O    :call <sid>open(0, 1)<cr>
+  nnoremap <silent> <buffer> r    :call <sid>reload()<cr>
   xnoremap <silent> <buffer> <cr> :<c-u>call <sid>open(1)<cr>
   xnoremap <silent> <buffer> o    :<c-u>call <sid>open(1)<cr>
   xnoremap <silent> <buffer> O    :<c-u>call <sid>open(1, 1)<cr>
@@ -235,11 +236,11 @@ endfunction
 
 function! s:fill(cmd)
   setlocal modifiable
-  let cursor_line = line('.')
+  let win_state = winsaveview()
   silent normal! gg"_dG
   silent execute 'read' escape('!'.a:cmd, '%')
   normal! gg"_dd
-  execute cursor_line
+  call winrestview(win_state)
   setlocal nomodifiable
 endfunction
 
@@ -280,7 +281,7 @@ function! s:list(bufname, fugitive_repo, log_opts)
   call s:maps()
   call s:syntax()
   redraw
-  echo 'o: open split / O: open tab / gb: Gbrowse / gq: quit'
+  echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
 endfunction
 
 function! s:trim(arg)
@@ -356,9 +357,12 @@ function! s:gv(bang, visual, line1, line2, args) abort
   let fugitive_repo = fugitive#repo(git_dir)
   let root = fugitive_repo.tree()
 
-  call chdir(root)
-  let b:current_path = expand('%')
-  call chdir('-')
+  if !exists('b:current_path')
+    call chdir(root)
+    let b:current_path = expand('%')
+    call chdir('-')
+  endif
+  let current_path = b:current_path
 
   try
     if a:args =~ '?$'
@@ -378,10 +382,23 @@ function! s:gv(bang, visual, line1, line2, args) abort
       call s:list(bufname, fugitive_repo, log_opts)
       call FugitiveDetect(@#)
     endif
+
     call chdir(root)
+    let b:current_path = current_path
+    let b:gv_opts = {
+          \ 'bang' : a:bang,
+          \ 'visual' : a:visual,
+          \ 'line1' : a:line1,
+          \ 'line2' : a:line2,
+          \ 'args' : a:args,
+          \ }
   catch
     return s:warn(v:exception)
   endtry
+endfunction
+
+function! s:reload() abort
+  call s:gv(b:gv_opts.bang, b:gv_opts.visual, b:gv_opts.line1, b:gv_opts.line2, b:gv_opts.args)
 endfunction
 
 function! s:gvcomplete(a, l, p) abort
