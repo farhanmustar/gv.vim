@@ -128,18 +128,19 @@ endfunction
 function! s:syntax()
   setf GV
   syn clear
-  syn match gvInfo    /^[^0-9]*\zs[0-9-]\+\s\+[a-f0-9]\+ / contains=gvDate,gvSha nextgroup=gvMessage,gvMeta
-  syn match gvDate    /\S\+ / contained
+  syn match gvInfo    /^[^a-f0-9]*\zs[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
   syn match gvSha     /[a-f0-9]\{6,}/ contained
-  syn match gvMessage /.* \ze(.\{-})$/ contained contains=gvTag,gvGitHub,gvJira nextgroup=gvAuthor
-  syn match gvAuthor  /.*$/ contained
-  syn match gvMeta    /([^)]\+) / contained contains=gvTag nextgroup=gvMessage
+  syn match gvMetaMessage /.* \ze(.\{-})$/ contained contains=gvAuthorMeta,gvGitHub,gvJira nextgroup=gvMeta
+  syn match gvMessage /.*) $/ contained contains=gvAuthorOnly,gvGitHub,gvJira
+  syn match gvAuthorMeta    /([^)]\+)[ ]\+([^)]\+)$/ contained contains=gvAuthor,gvMeta
+  syn match gvAuthorOnly    /([^)]\+) $/ contained contains=gvAuthor
+  syn match gvAuthor    /([^)]\+) / contained
+  syn match gvMeta    /([^)]\+)$/ contained contains=gvTag
   syn match gvTag     /(tag:[^)]\+)/ contained
   syn match gvGitHub  /\<#[0-9]\+\>/ contained
   syn match gvJira    /\<[A-Z]\+-[0-9]\+\>/ contained
-  hi def link gvDate   Number
   hi def link gvSha    Identifier
-  hi def link gvTag    Constant
+  hi def link gvTag    Conditional
   hi def link gvGitHub Label
   hi def link gvJira   Label
   hi def link gvMeta   Conditional
@@ -245,7 +246,7 @@ function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
 endfunction
 
 function! s:list(fugitive_repo, log_opts)
-  let default_opts = ['--color=never', '--date=short', '--format=%cd %h%d %s (%an)']
+  let default_opts = ['--color=never', '--date=short', "--format=format:%h %<(75,trunc)%s (%aN, %ar) %d"]
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = call(a:fugitive_repo.git_command, git_args, a:fugitive_repo)
 
