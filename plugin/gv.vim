@@ -246,7 +246,7 @@ function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
 endfunction
 
 function! s:list(fugitive_repo, log_opts)
-  let default_opts = ['--color=never', '--date=short', "--format=format:%h %<(75,trunc)%s (%aN, %ar) %d"]
+  let default_opts = ['--color=never', '--branches', '--remotes', '--tags', "--format=format:%h %<(75,trunc)%s (%aN, %ar) %d"]
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = call(a:fugitive_repo.git_command, git_args, a:fugitive_repo)
 
