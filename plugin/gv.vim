@@ -134,7 +134,7 @@ function! s:syntax()
   syn match gvMessage /.*) $/ contained contains=gvAuthorOnly,gvGitHub,gvJira
   syn match gvAuthorMeta    /([^)]\+)[ ]\+([^)]\+)$/ contained contains=gvAuthor,gvMeta
   syn match gvAuthorOnly    /([^)]\+) $/ contained contains=gvAuthor
-  syn match gvAuthor    /([^)]\+) / contained
+  syn match gvAuthor    /([^()]\+) / contained
   syn match gvMeta    /([^)]\+)$/ contained contains=gvTag
   syn match gvTag     /(tag:[^)]\+)/ contained
   syn match gvGitHub  /\<#[0-9]\+\>/ contained
