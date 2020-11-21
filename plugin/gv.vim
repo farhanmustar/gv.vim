@@ -264,7 +264,7 @@ function! s:list(fugitive_repo, log_opts)
   call s:maps()
   call s:syntax()
   redraw
-  echo 'o: open split / O: open tab / gb: Gbrowse / q: quit'
+  echo 'o: open split / O: open tab / gb: Gbrowse / gq: quit'
 endfunction
 
 function! s:trim(arg)
