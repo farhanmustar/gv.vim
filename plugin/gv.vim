@@ -393,3 +393,4 @@ function! s:gvcomplete(a, l, p) abort
 endfunction
 
 command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>)
+command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVD call s:gv(<bang>0, <count>, <line1>, <line2>, ( <q-args> == '' ? '--date-order' : '--date-order '.<q-args>))
