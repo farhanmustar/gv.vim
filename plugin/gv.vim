@@ -335,6 +335,14 @@ function! s:gl(buf, visual)
   let w:quickfix_title = 'o: open / o (in visual): diff / O: open (tab) / gq: quit'
 endfunction
 
+function! s:chdir(path)
+  if exists('*chdir')
+    call chdir(a:path)
+  else
+    execute 'lcd '.a:path
+  endif
+endfunction
+
 function! s:gld() range
   let [to, from] = map([a:firstline, a:lastline], 'split(getline(v:val), "|")[0]')
   execute (tabpagenr()-1).'tabedit' escape(to, ' ')
@@ -358,9 +366,9 @@ function! s:gv(bang, visual, line1, line2, args) abort
   let root = fugitive_repo.tree()
 
   if !exists('b:current_path')
-    call chdir(root)
+    call s:chdir(root)
     let b:current_path = expand('%')
-    call chdir('-')
+    call s:chdir('-')
   endif
   let current_path = b:current_path
 
@@ -383,7 +391,7 @@ function! s:gv(bang, visual, line1, line2, args) abort
       call FugitiveDetect(@#)
     endif
 
-    call chdir(root)
+    call s:chdir(root)
     let b:current_path = current_path
     let b:gv_opts = {
           \ 'bang' : a:bang,
