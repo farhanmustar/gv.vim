@@ -363,7 +363,7 @@ function! s:list(bufname, log_opts, visual)
   if !get(t:, 'gv_vim_tab', 0)
     let t:gv_vim_tab = 1  " mark tab
     redraw
-    echo 'o: open split / O: open tab / gb: Gbrowse / r: reload / <: dec width / >: inc width /  gq: quit'
+    echo 'o: open split / O: open tab / gb: GBrowse / r: reload / <: dec width / >: inc width /  gq: quit'
   endif
 endfunction
 
