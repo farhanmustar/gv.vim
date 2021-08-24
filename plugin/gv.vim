@@ -61,7 +61,7 @@ function! s:type(visual)
     if len(shas) < 2
       return [0, 0]
     endif
-    return ['diff', fugitive#repo().git_command('diff', shas[-1], shas[0])]
+    return ['diff', FugitiveShellCommand(['diff', shas[-1], shas[0]])]
   endif
 
   if exists('b:git_origin')
@@ -245,7 +245,7 @@ function! s:fill(cmd)
 endfunction
 
 function! s:tracked(fugitive_repo, file)
-  call system(a:fugitive_repo.git_command('ls-files', '--error-unmatch', a:file))
+  call system(FugitiveShellCommand(['ls-files', '--error-unmatch', a:file]))
   return !v:shell_error
 endfunction
 
@@ -268,7 +268,7 @@ endfunction
 function! s:list(bufname, fugitive_repo, log_opts)
   let default_opts = ['--color=never', '--branches', '--remotes', '--tags', "--format=format:%h %<(75,trunc)%s (%aN, %ar) %d"]
   let git_args = ['log'] + default_opts + a:log_opts
-  let git_log_cmd = call(a:fugitive_repo.git_command, git_args, a:fugitive_repo)
+  let git_log_cmd = FugitiveShellCommand(git_args, a:fugitive_repo)
 
   silent exe (bufexists(a:bufname) ? 'buffer' : 'file') fnameescape(a:bufname)
 
