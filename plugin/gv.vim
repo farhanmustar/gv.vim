@@ -373,7 +373,7 @@ function! s:onfugitiveupdated() abort
   let l:win_state = winsaveview()
 
   call win_gotoid(l:gv_winid)
-  execute 'GV'
+  call s:reload()
 
   call win_gotoid(l:current_winid)
   call winrestview(l:win_state)
