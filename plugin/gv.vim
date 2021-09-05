@@ -280,8 +280,12 @@ function! s:list(bufname, fugitive_repo, log_opts)
   endif
   call s:maps()
   call s:syntax()
-  redraw
-  echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
+
+  if !get(t:, 'gv_vim_tab', 0)
+    let t:gv_vim_tab = 1  " mark tab
+    redraw
+    echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
+  endif
 endfunction
 
 function! s:trim(arg)
@@ -342,6 +346,43 @@ function! s:chdir(path)
     execute 'lcd '.a:path
   endif
 endfunction
+
+function! s:onfugitiveupdated() abort
+  let l:is_gv_vim_tab = get(t:, 'gv_vim_tab', 0)
+
+  if !l:is_gv_vim_tab
+    let t:gv_vim_tab = 0
+    return
+  endif
+
+  let l:tabpageinfo = gettabinfo(tabpagenr())[0]
+  let l:gv_winid = -1
+  for l:winid in l:tabpageinfo['windows']
+    let ft = getwinvar(l:winid, '&filetype')
+    if ft == 'GV'
+      let l:gv_winid = l:winid
+      break
+    endif
+  endfor
+
+  if l:gv_winid == -1
+    return
+  endif
+
+  let l:current_winid = win_getid()
+  let l:win_state = winsaveview()
+
+  call win_gotoid(l:gv_winid)
+  execute 'GV'
+
+  call win_gotoid(l:current_winid)
+  call winrestview(l:win_state)
+endfunction
+
+augroup fugitivegv
+  autocmd!
+  autocmd User FugitiveChanged call s:onfugitiveupdated()
+augroup END
 
 function! s:gld() range
   let [to, from] = map([a:firstline, a:lastline], 'split(getline(v:val), "|")[0]')
