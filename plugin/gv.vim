@@ -45,7 +45,6 @@ endfunction
 
 function! s:tabnew()
   execute (tabpagenr()-1).'tabnew'
-  let t:gv_vim_tab = 1  " mark tab
 endfunction
 
 function! s:gbrowse()
@@ -281,8 +280,12 @@ function! s:list(bufname, fugitive_repo, log_opts)
   endif
   call s:maps()
   call s:syntax()
-  redraw
-  echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
+
+  if !get(t:, 'gv_vim_tab', 0)
+    let t:gv_vim_tab = 1  " mark tab
+    redraw
+    echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
+  endif
 endfunction
 
 function! s:trim(arg)
@@ -346,7 +349,9 @@ endfunction
 
 function! s:onfugitiveupdated() abort
   let l:is_gv_vim_tab = get(t:, 'gv_vim_tab', 0)
+
   if !l:is_gv_vim_tab
+    let t:gv_vim_tab = 0
     return
   endif
 
