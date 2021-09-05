@@ -173,6 +173,8 @@ function! s:maps()
   nnoremap <silent> <buffer> o    :call <sid>open(0)<cr>
   nnoremap <silent> <buffer> O    :call <sid>open(0, 1)<cr>
   nnoremap <silent> <buffer> r    :call <sid>reload()<cr>
+  nnoremap <silent> <buffer> >    :call <sid>increase_width()<cr>
+  nnoremap <silent> <buffer> <    :call <sid>decrease_width()<cr>
   xnoremap <silent> <buffer> <cr> :<c-u>call <sid>open(1)<cr>
   xnoremap <silent> <buffer> o    :<c-u>call <sid>open(1)<cr>
   xnoremap <silent> <buffer> O    :<c-u>call <sid>open(1, 1)<cr>
@@ -266,7 +268,9 @@ function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
 endfunction
 
 function! s:list(bufname, fugitive_repo, log_opts)
-  let default_opts = ['--color=never', '--branches', '--remotes', '--tags', "--format=format:%h %<(75,trunc)%s (%aN, %ar) %d"]
+  let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
+  let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
+  let default_opts = ['--color=never', '--branches', '--remotes', '--tags', "--format=format:%h %<(".comment_width.",trunc)%s (%aN, %ar) %d"]
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args, a:fugitive_repo)
 
@@ -284,7 +288,7 @@ function! s:list(bufname, fugitive_repo, log_opts)
   if !get(t:, 'gv_vim_tab', 0)
     let t:gv_vim_tab = 1  " mark tab
     redraw
-    echo 'o: open split / O: open tab / gb: Gbrowse / r: reload /  gq: quit'
+    echo 'o: open split / O: open tab / gb: Gbrowse / r: reload / <: dec width / >: inc width /  gq: quit'
   endif
 endfunction
 
@@ -448,6 +452,21 @@ endfunction
 
 function! s:reload() abort
   call s:gv(b:gv_opts.bang, b:gv_opts.visual, b:gv_opts.line1, b:gv_opts.line2, b:gv_opts.args)
+endfunction
+
+function! s:increase_width()
+  let b:gv_comment_width = get(b:, 'gv_comment_width', 75) + 15
+  call s:reload()
+endfunction
+
+function! s:decrease_width()
+  let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
+  if b:gv_comment_width - 15 < 0
+    return
+  endif
+
+  let b:gv_comment_width -= 15
+  call s:reload()
 endfunction
 
 function! s:gvcomplete(a, l, p) abort
