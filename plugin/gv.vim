@@ -267,10 +267,13 @@ function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
   return [['--graph'], []]
 endfunction
 
-function! s:list(bufname, fugitive_repo, log_opts)
+function! s:list(bufname, fugitive_repo, log_opts, raw_option)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
-  let default_opts = ['--color=never', '--branches', '--remotes', '--tags', "--format=format:%h %<(".comment_width.",trunc)%s (%aN, %ar) %d"]
+
+  let default_opts = a:raw_option ? ['--color=never'] : ['--color=never', '--branches', '--remotes', '--tags']
+  let default_opts = default_opts + ["--format=format:%h %<(".comment_width.",trunc)%s (%aN, %ar) %d"]
+
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args, a:fugitive_repo)
 
@@ -397,7 +400,7 @@ function! s:gld() range
   endif
 endfunction
 
-function! s:gv(bang, visual, line1, line2, args) abort
+function! s:gv(bang, visual, line1, line2, args, raw_option) abort
   if !exists('g:loaded_fugitive')
     return s:warn('fugitive not found')
   endif
@@ -429,10 +432,10 @@ function! s:gv(bang, visual, line1, line2, args) abort
       let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(fugitive_repo.tree(), ':t')
-      let bufname = repo_short_name.' '.join(log_opts)
+      let bufname = repo_short_name.(a:raw_option ? ' raw ' : ' ').join(log_opts)
 
       call s:setup(bufname, git_dir, fugitive_repo.config('remote.origin.url'))
-      call s:list(bufname, fugitive_repo, log_opts)
+      call s:list(bufname, fugitive_repo, log_opts, a:raw_option)
       call FugitiveDetect(@#)
     endif
 
@@ -444,6 +447,7 @@ function! s:gv(bang, visual, line1, line2, args) abort
           \ 'line1' : a:line1,
           \ 'line2' : a:line2,
           \ 'args' : a:args,
+          \ 'raw_option' : a:raw_option,
           \ }
   catch
     return s:warn(v:exception)
@@ -451,7 +455,7 @@ function! s:gv(bang, visual, line1, line2, args) abort
 endfunction
 
 function! s:reload() abort
-  call s:gv(b:gv_opts.bang, b:gv_opts.visual, b:gv_opts.line1, b:gv_opts.line2, b:gv_opts.args)
+  call s:gv(b:gv_opts.bang, b:gv_opts.visual, b:gv_opts.line1, b:gv_opts.line2, b:gv_opts.args, b:gv_opts.raw_option)
 endfunction
 
 function! s:increase_width()
@@ -473,5 +477,6 @@ function! s:gvcomplete(a, l, p) abort
   return fugitive#repo().superglob(a:a)
 endfunction
 
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>)
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVD call s:gv(<bang>0, <count>, <line1>, <line2>, ( <q-args> == '' ? '--date-order' : '--date-order '.<q-args>))
+command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
+command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVD call s:gv(<bang>0, <count>, <line1>, <line2>, '--date-order '.<q-args>, 0)
+command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVB call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 1)
