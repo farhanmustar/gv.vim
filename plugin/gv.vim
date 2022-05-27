@@ -480,3 +480,4 @@ endfunction
 command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
 command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVD call s:gv(<bang>0, <count>, <line1>, <line2>, '--date-order '.<q-args>, 0)
 command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVB call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 1)
+command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVS call s:gv(<bang>0, <count>, <line1>, <line2>, '--first-parent '.<q-args>, 1)
