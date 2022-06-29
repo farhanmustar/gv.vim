@@ -427,7 +427,9 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(root, ':t')
-      let bufname = repo_short_name.(a:raw_option ? ' raw ' : ' ').join(log_opts)
+      let bufname = repo_short_name.' '.join(log_opts)
+      " compact bufname for default graph
+      let bufname = substitute(bufname, '--branches --remotes --tags', '[brt]', '')
 
       call s:chdir(root)
       call s:setup(bufname, FugitiveRemoteUrl())
