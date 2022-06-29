@@ -52,7 +52,7 @@ function! s:gbrowse()
   if empty(sha)
     return s:shrug()
   endif
-  execute 'Gbrowse' sha
+  execute 'GBrowse' sha
 endfunction
 
 function! s:type(visual)
@@ -76,7 +76,7 @@ function! s:type(visual)
 
   let sha = gv#sha()
   if !empty(sha)
-    return ['commit', FugitiveFind(sha, b:git_dir)]
+    return ['commit', FugitiveFind(sha)]
   endif
   return [0, 0]
 endfunction
@@ -106,7 +106,7 @@ function! s:open(visual, ...)
   call s:scratch()
   if type == 'commit'
     execute 'e' escape(target, ' ')
-    nnoremap <silent> <buffer> gb :Gbrowse<cr>
+    nnoremap <silent> <buffer> gb :GBrowse<cr>
   elseif type == 'diff'
     call s:fill(target)
     setf diff
@@ -194,7 +194,7 @@ function! s:maps()
   xmap              <buffer> <C-p> [[ogv
 endfunction
 
-function! s:setup(bufname, git_dir, git_origin)
+function! s:setup(bufname, git_origin)
   let winid = s:find_winid(a:bufname)
   if winid != -1
     call win_gotoid(winid)
@@ -217,7 +217,6 @@ function! s:setup(bufname, git_dir, git_origin)
     let scheme = origin[1] =~ '^http' ? origin[1] : 'https://'
     let b:git_origin = printf('%s%s/%s', scheme, origin[2], origin[3])
   endif
-  let b:git_dir = a:git_dir
 endfunction
 
 function! s:find_winid(bufname)
@@ -246,28 +245,28 @@ function! s:fill(cmd)
   setlocal nomodifiable
 endfunction
 
-function! s:tracked(fugitive_repo, file)
+function! s:tracked(file)
   call system(FugitiveShellCommand(['ls-files', '--error-unmatch', a:file]))
   return !v:shell_error
 endfunction
 
-function! s:check_buffer(fugitive_repo, current)
+function! s:check_buffer(current)
   if empty(a:current)
     throw 'untracked buffer'
-  elseif !s:tracked(a:fugitive_repo, a:current)
+  elseif !s:tracked(a:current)
     throw a:current.' is untracked'
   endif
 endfunction
 
-function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
+function! s:log_opts(bang, visual, line1, line2)
   if a:visual || a:bang
-    call s:check_buffer(a:fugitive_repo, b:current_path)
+    call s:check_buffer(b:current_path)
     return a:visual ? [[printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--follow'], ['--', b:current_path]]
   endif
   return [['--graph'], []]
 endfunction
 
-function! s:list(bufname, fugitive_repo, log_opts, raw_option)
+function! s:list(bufname, log_opts, raw_option)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
@@ -275,14 +274,14 @@ function! s:list(bufname, fugitive_repo, log_opts, raw_option)
   let default_opts = default_opts + ["--format=format:%h %<(".comment_width.",trunc)%s (%aN, %ar) %d"]
 
   let git_args = ['log'] + default_opts + a:log_opts
-  let git_log_cmd = FugitiveShellCommand(git_args, a:fugitive_repo)
+  let git_log_cmd = FugitiveShellCommand(git_args)
 
   silent exe (bufexists(a:bufname) ? 'buffer' : 'file') fnameescape(a:bufname)
 
   call s:fill(git_log_cmd)
   setlocal nowrap tabstop=8 cursorline iskeyword+=#
 
-  if !exists(':Gbrowse')
+  if !exists(':GBrowse')
     doautocmd <nomodeline> User Fugitive
   endif
   call s:maps()
@@ -405,13 +404,11 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
     return s:warn('fugitive not found')
   endif
 
-  let git_dir = FugitiveGitDir()
-  if empty(git_dir)
+  if empty(FugitiveGitDir())
     return s:warn('not in git repo')
   endif
 
-  let fugitive_repo = fugitive#repo(git_dir)
-  let root = fugitive_repo.tree()
+  let root = FugitiveFind(':/')
 
   if !exists('b:current_path')
     call s:chdir(root)
@@ -425,17 +422,17 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       if len(a:args) > 1
         return s:warn('invalid arguments')
       endif
-      call s:check_buffer(fugitive_repo, b:current_path)
+      call s:check_buffer(b:current_path)
       call s:gl(bufnr(''), a:visual)
     else
-      let [opts1, paths1] = s:log_opts(fugitive_repo, a:bang, a:visual, a:line1, a:line2)
+      let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2)
       let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
       let log_opts = opts1 + opts2 + paths1 + paths2
-      let repo_short_name = fnamemodify(fugitive_repo.tree(), ':t')
+      let repo_short_name = fnamemodify(root, ':t')
       let bufname = repo_short_name.(a:raw_option ? ' raw ' : ' ').join(log_opts)
 
-      call s:setup(bufname, git_dir, fugitive_repo.config('remote.origin.url'))
-      call s:list(bufname, fugitive_repo, log_opts, a:raw_option)
+      call s:setup(bufname, FugitiveRemoteUrl())
+      call s:list(bufname, log_opts, a:raw_option)
       call FugitiveDetect(@#)
     endif
 
@@ -473,11 +470,7 @@ function! s:decrease_width()
   call s:reload()
 endfunction
 
-function! s:gvcomplete(a, l, p) abort
-  return fugitive#repo().superglob(a:a)
-endfunction
-
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVD call s:gv(<bang>0, <count>, <line1>, <line2>, '--date-order '.<q-args>, 0)
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVB call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 1)
-command! -bang -nargs=* -range=0 -complete=customlist,s:gvcomplete GVS call s:gv(<bang>0, <count>, <line1>, <line2>, '--first-parent '.<q-args>, 1)
+command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
+command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVD call s:gv(<bang>0, <count>, <line1>, <line2>, '--date-order '.<q-args>, 0)
+command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVB call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 1)
+command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVS call s:gv(<bang>0, <count>, <line1>, <line2>, '--first-parent '.<q-args>, 1)
