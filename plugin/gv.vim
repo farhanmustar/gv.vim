@@ -414,7 +414,6 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
     let b:current_path = expand('%')
     call s:chdir('-')
   endif
-  let current_path = b:current_path
 
   try
     if a:args =~ '?$'
@@ -436,7 +435,6 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       call FugitiveDetect(@#)
     endif
 
-    let b:current_path = current_path
     let b:gv_opts = {
           \ 'bang' : a:bang,
           \ 'visual' : a:visual,
