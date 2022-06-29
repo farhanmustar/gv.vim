@@ -430,12 +430,12 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       let repo_short_name = fnamemodify(root, ':t')
       let bufname = repo_short_name.(a:raw_option ? ' raw ' : ' ').join(log_opts)
 
+      call s:chdir(root)
       call s:setup(bufname, FugitiveRemoteUrl())
       call s:list(bufname, log_opts)
       call FugitiveDetect(@#)
     endif
 
-    call s:chdir(root)
     let b:current_path = current_path
     let b:gv_opts = {
           \ 'bang' : a:bang,
