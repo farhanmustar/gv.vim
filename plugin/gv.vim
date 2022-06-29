@@ -258,20 +258,19 @@ function! s:check_buffer(current)
   endif
 endfunction
 
-function! s:log_opts(bang, visual, line1, line2)
+function! s:log_opts(bang, visual, line1, line2, raw_option)
   if a:visual || a:bang
     call s:check_buffer(b:current_path)
     return a:visual ? [[printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--follow'], ['--', b:current_path]]
   endif
-  return [['--graph'], []]
+  return a:raw_option ? [['--graph'], []] : [['--graph', '--branches', '--remotes', '--tags'], []]
 endfunction
 
-function! s:list(bufname, log_opts, raw_option)
+function! s:list(bufname, log_opts)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
-  let default_opts = a:raw_option ? ['--color=never'] : ['--color=never', '--branches', '--remotes', '--tags']
-  let default_opts = default_opts + ["--format=format:%h %<(".comment_width.",trunc)%s (%aN, %ar) %d"]
+  let default_opts = ['--color=never', '--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
 
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args)
@@ -425,14 +424,14 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       call s:check_buffer(b:current_path)
       call s:gl(bufnr(''), a:visual)
     else
-      let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2)
+      let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
       let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(root, ':t')
       let bufname = repo_short_name.(a:raw_option ? ' raw ' : ' ').join(log_opts)
 
       call s:setup(bufname, FugitiveRemoteUrl())
-      call s:list(bufname, log_opts, a:raw_option)
+      call s:list(bufname, log_opts)
       call FugitiveDetect(@#)
     endif
 
