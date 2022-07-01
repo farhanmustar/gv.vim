@@ -220,7 +220,7 @@ function! s:setup(bufname, git_origin)
 endfunction
 
 function! s:find_winid(bufname)
-  let bufid = buffer_number(a:bufname)
+  let bufid = bufnr('^'.fnameescape(a:bufname).'$')
   if bufid == -1
     return -1
   endif
