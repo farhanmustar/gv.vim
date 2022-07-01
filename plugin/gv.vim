@@ -224,6 +224,10 @@ function! s:find_winid(bufname)
   if bufid == -1
     return -1
   endif
+  " check if current window contain the buffer
+  if bufid == bufnr()
+    return win_getid()
+  endif
   let winidlist = win_findbuf(bufid)
   if empty(winidlist)
     return -1
