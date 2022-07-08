@@ -433,7 +433,7 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       let repo_short_name = fnamemodify(root, ':t')
       let bufname = repo_short_name.' '.join(log_opts)
       " compact bufname for default graph
-      let bufname = substitute(bufname, '--branches --remotes --tags', '[brt]', '')
+      let bufname = substitute(bufname, '--branches --remotes --tags', '--brt', '')
 
       call s:chdir(root)
       call s:setup(bufname, FugitiveRemoteUrl())
