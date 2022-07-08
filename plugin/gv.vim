@@ -198,9 +198,12 @@ function! s:setup(bufname, git_origin)
   let winid = s:find_winid(a:bufname)
   if winid != -1
     call win_gotoid(winid)
+    silent exe 'buffer' fnameescape(a:bufname)
   else
     call s:tabnew()
+    silent exe 'file' fnameescape(a:bufname)
   endif
+
   call s:scratch()
 
   if exists('g:fugitive_github_domains')
@@ -278,8 +281,6 @@ function! s:list(bufname, log_opts)
 
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args)
-
-  silent exe (bufexists(a:bufname) ? 'buffer' : 'file') fnameescape(a:bufname)
 
   call s:fill(git_log_cmd)
   setlocal nowrap tabstop=8 cursorline iskeyword+=#
