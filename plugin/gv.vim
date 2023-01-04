@@ -128,23 +128,27 @@ endfunction
 function! s:syntax()
   setf GV
   syn clear
-  syn match gvInfo    /^[^a-f0-9]*\zs[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
+  syn match gvTree    /^[^a-f0-9]* / nextgroup=gvInfo
+  syn match gvInfo    /[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
   syn match gvSha     /[a-f0-9]\{6,}/ contained
   syn match gvMetaMessage /.* \ze(.\{-})$/ contained contains=gvAuthorMeta,gvGitHub,gvJira nextgroup=gvMeta
   syn match gvMessage /.*) $/ contained contains=gvAuthorOnly,gvGitHub,gvJira
   syn match gvAuthorMeta    /([^)]\+)[ ]\+([^)]\+)$/ contained contains=gvAuthor,gvMeta
   syn match gvAuthorOnly    /([^)]\+) $/ contained contains=gvAuthor
-  syn match gvAuthor    /([^()]\+) / contained
+  syn match gvAuthor    /([^()]\+) / contained contains=gvAuthorName
+  syn match gvAuthorName  /(\zs[^(),]\+\ze,/ contained
   syn match gvMeta    /([^)]\+)$/ contained contains=gvTag
   syn match gvTag     /(tag:[^)]\+)/ contained
   syn match gvGitHub  /\<#[0-9]\+\>/ contained
   syn match gvJira    /\<[A-Z]\+-[0-9]\+\>/ contained
+  hi def link gvTree   Comment
   hi def link gvSha    Identifier
   hi def link gvTag    Conditional
   hi def link gvGitHub Label
   hi def link gvJira   Label
   hi def link gvMeta   Conditional
   hi def link gvAuthor String
+  hi def link gvAuthorName Function
 
   syn match gvAdded     "^\W*\zsA\t.*"
   syn match gvDeleted   "^\W*\zsD\t.*"
