@@ -29,6 +29,7 @@ function! s:shrug()
 endfunction
 
 let s:begin = '^[^a-f0-9]*\zs[a-f0-9]\+'
+let s:ansi_hi_ns = luaeval('vim.api.nvim_create_namespace("gvhi")')
 
 function! gv#sha(...)
   return matchstr(get(a:000, 0, getline('.')), s:begin)
@@ -252,8 +253,72 @@ function! s:fill(cmd)
   silent normal! gg"_dG
   silent execute 'read' escape('!'.a:cmd, '%')
   normal! gg"_dd
+  call s:ansi_highlight()
   call winrestview(win_state)
   setlocal nomodifiable
+endfunction
+
+function! s:ansi_highlight()
+  " experimental ansi_highlight for single line mainly for git log tree.
+  call s:ansi_syntax()
+  for i in range(1, line('$'))
+    let l = getline(i)
+    let prev_hi = ''
+    let prev_idx = ''
+    let hi_list = []
+
+    let s = 0
+    while 1
+      let [m, s, e] = matchstrpos(l, '\e\[[0-9;]*[mK]', s)
+      if len(m) == 0
+        break
+      endif
+      if s == 0
+        let l = l[e:]
+      else
+        let l = l[:s-1] . l[e:]
+      endif
+
+      let cur_hi = s:ansi_hi_group(m)
+      if prev_hi == cur_hi
+        continue
+      endif
+
+      if len(prev_hi) > 0
+        call add(hi_list, [prev_hi, prev_idx, s])
+      endif
+
+      let prev_hi = cur_hi
+      let prev_idx = s
+    endwhile
+    call setline(i, l)
+
+    for [prefix, s, e] in hi_list
+      execute 'lua vim.highlight.range('.bufnr('%').','.s:ansi_hi_ns.',"gvAnsi'.prefix.'",{'.(i-1).','.s.'},{'.(i-1).','.e.'},{})'
+    endfor
+  endfor
+endfunction
+
+function! s:ansi_hi_group(ansi)
+  return matchstr(a:ansi, '\d\zem')
+endfunction
+
+function! s:ansi_syntax()
+  hi def link gvAnsi1 Keyword
+  hi def link gvAnsi2 Include
+  hi def link gvAnsi3 Type
+  hi def link gvAnsi4 Variable
+  hi def link gvAnsi5 Constant
+  hi def link gvAnsi6 Define
+  hi def link gvAnsi7 Operator
+  hi def link gvAnsi8 Identifier
+  hi def link gvAnsi9 Comment
+  hi def link gvAnsi10 Comment
+  hi def link gvAnsi11 Comment
+  hi def link gvAnsi12 Comment
+  hi def link gvAnsi13 Comment
+  hi def link gvAnsi14 Comment
+  hi def link gvAnsi15 Comment
 endfunction
 
 function! s:tracked(file)
@@ -281,7 +346,7 @@ function! s:list(bufname, log_opts)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
-  let default_opts = ['--color=never', '--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
+  let default_opts = ['--color', '--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
 
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args)
