@@ -253,14 +253,19 @@ function! s:fill(cmd)
   silent normal! gg"_dG
   silent execute 'read' escape('!'.a:cmd, '%')
   normal! gg"_dd
-  call s:ansi_highlight()
+  call s:ansi_syntax()
+
+  " let start = reltime()
+  call v:lua.require('gv').ansi_highlight()
+  " call s:ansi_highlight()
+  " echom "elapsed time:".reltimestr(reltime(start))
+
   call winrestview(win_state)
   setlocal nomodifiable
 endfunction
 
 function! s:ansi_highlight()
   " experimental ansi_highlight for single line mainly for git log tree.
-  call s:ansi_syntax()
   for i in range(1, line('$'))
     let l = getline(i)
     let prev_hi = ''
