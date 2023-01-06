@@ -337,16 +337,16 @@ endfunction
 function! s:log_opts(bang, visual, line1, line2, raw_option)
   if a:visual || a:bang
     call s:check_buffer(b:current_path)
-    return a:visual ? [[printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--follow'], ['--', b:current_path]]
+    return a:visual ? [['--color=never', printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--color=never', '--follow'], ['--', b:current_path]]
   endif
-  return a:raw_option ? [['--graph'], []] : [['--graph', '--branches', '--remotes', '--tags'], []]
+  return a:raw_option ? [['--color', '--graph'], []] : [['--color', '--graph', '--branches', '--remotes', '--tags'], []]
 endfunction
 
 function! s:list(bufname, log_opts)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
-  let default_opts = ['--color', '--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
+  let default_opts = ['--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
 
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args)
