@@ -255,12 +255,13 @@ function! s:fill(cmd)
   normal! gg"_dd
   call s:ansi_syntax()
 
+  call winrestview(win_state)
+
   " let start = reltime()
   call v:lua.require('gv').ansi_highlight()
   " call s:ansi_highlight()
   " echom "elapsed time:".reltimestr(reltime(start))
 
-  call winrestview(win_state)
   setlocal nomodifiable
 endfunction
 
