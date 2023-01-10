@@ -1,6 +1,6 @@
 local M = {}
 local LINE_CHUNK = 100
-local VISIBLE_PADDING = 10
+local VISIBLE_PADDING = 100
 local ns = vim.api.nvim_create_namespace("gvhi")
 function M.ansi_highlight()
   local max_line = vim.fn.line('$')
@@ -67,9 +67,9 @@ function M.ansi_highlight()
       end
 
       if i - cur > LINE_CHUNK and i + 1 <= max_line then
-        vim.schedule(function()
+        vim.defer_fn(function()
           ansi_highlight_worker(i + 1)
-        end)
+        end, 100)
         return
       end
       ::continue::
@@ -80,9 +80,9 @@ function M.ansi_highlight()
     for i = min_visble_line, max_visble_line do
       ansi_highlight_task(i)
     end
-    vim.schedule(function()
+    vim.defer_fn(function()
       ansi_highlight_worker(1)
-    end)
+    end, 100)
   else
     ansi_highlight_worker(1)
   end
