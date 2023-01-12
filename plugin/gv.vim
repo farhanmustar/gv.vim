@@ -129,7 +129,8 @@ endfunction
 function! s:syntax()
   setf GV
   syn clear
-  syn match gvTree    /^[^a-f0-9]* / nextgroup=gvInfo
+  syn match gvTree    /^[^a-f0-9]* / contains=gvAnsi nextgroup=gvInfo
+  syn match gvAnsiIgnore    /\e\[[0-9;]*[mK][\d\a\\|/ ]\=/ conceal cchar= 
   syn match gvInfo    /[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
   syn match gvSha     /[a-f0-9]\{6,}/ contained
   syn match gvMetaMessage /.* \ze(.\{-})$/ contained contains=gvAuthorMeta,gvGitHub,gvJira nextgroup=gvMeta
@@ -142,13 +143,13 @@ function! s:syntax()
   syn match gvTag     /(tag:[^)]\+)/ contained
   syn match gvGitHub  /\<#[0-9]\+\>/ contained
   syn match gvJira    /\<[A-Z]\+-[0-9]\+\>/ contained
-  hi def link gvTree   Comment
-  hi def link gvSha    Identifier
-  hi def link gvTag    Conditional
-  hi def link gvGitHub Label
-  hi def link gvJira   Label
-  hi def link gvMeta   Conditional
-  hi def link gvAuthor String
+  hi def link gvTree       Comment
+  hi def link gvSha        Identifier
+  hi def link gvTag        Conditional
+  hi def link gvGitHub     Label
+  hi def link gvJira       Label
+  hi def link gvMeta       Conditional
+  hi def link gvAuthor     String
   hi def link gvAuthorName Function
 
   syn match gvAdded     "^\W*\zsA\t.*"
@@ -168,6 +169,9 @@ function! s:syntax()
   hi def link diffRemoved Special
   hi def link diffFile    Type
   hi def link diffLine    Statement
+
+  setlocal conceallevel=1
+  setlocal concealcursor=nvc
 endfunction
 
 function! s:maps()
