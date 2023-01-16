@@ -28,7 +28,7 @@ function! s:shrug()
   call s:warn('¯\_(ツ)_/¯')
 endfunction
 
-let s:begin = '^[^a-f0-9]*\zs[a-f0-9]\+'
+let s:begin = '[a-f0-9]\{4,}'
 let s:ansi_hi_ns = luaeval('vim.api.nvim_create_namespace("gvhi")')
 
 function! gv#sha(...)
@@ -129,8 +129,11 @@ endfunction
 function! s:syntax()
   setf GV
   syn clear
-  syn match gvTree    /^[^a-f0-9]* / contains=gvAnsi nextgroup=gvInfo
-  syn match gvAnsiIgnore    /\e\[[0-9;]*[mK][\d\a\\|/ ]\=/ conceal cchar= 
+  syn match gvTree    /^[^a-f0-9]* / nextgroup=gvInfo
+  syn match gvAnsiIgnore1    /\e\[[0-9;]*[mK]|\e\[m/ conceal cchar=|
+  syn match gvAnsiIgnore2    /\e\[[0-9;]*[mK]\/\e\[m/ conceal cchar=/
+  syn match gvAnsiIgnore3    /\e\[[0-9;]*[mK]\\\e\[m/ conceal cchar=\
+  syn match gvAnsiIgnore4    /\e\[[0-9;]*[mK]_\e\[m/ conceal cchar=_
   syn match gvInfo    /[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
   syn match gvSha     /[a-f0-9]\{6,}/ contained
   syn match gvMetaMessage /.* \ze(.\{-})$/ contained contains=gvAuthorMeta,gvGitHub,gvJira nextgroup=gvMeta

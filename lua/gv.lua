@@ -2,6 +2,9 @@ local M = {}
 local LINE_CHUNK = 100
 local VISIBLE_PADDING = 100
 local ns = vim.api.nvim_create_namespace("gvhi")
+local opts = {
+  priority=300
+}
 function M.ansi_highlight()
   local max_line = vim.fn.line('$')
 
@@ -50,7 +53,7 @@ function M.ansi_highlight()
 
     for _, v in ipairs(hi_list) do
       local prefix, s, e = v[1], v[2], v[3]
-      vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {line-1, s}, {line-1,e})
+      vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {line-1, s}, {line-1,e}, opts)
     end
   end
 
