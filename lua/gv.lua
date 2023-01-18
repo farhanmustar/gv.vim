@@ -14,6 +14,13 @@ function M.ansi_highlight()
   max_visble_line = max_visble_line > max_line and max_line or max_visble_line
 
   local buf = vim.fn.bufnr('%')
+  local bufId = vim.b[buf].ansi_buf_id
+  if bufId == nil then
+    bufId = 0
+  end
+
+  bufId = bufId + 1
+  vim.b[buf].ansi_buf_id = bufId
 
   function ansi_highlight_task(line)
     local l = vim.fn.getbufoneline(buf, line)
@@ -57,8 +64,16 @@ function M.ansi_highlight()
     end
   end
 
-  function ansi_highlight_worker(cur)
+  function ansi_highlight_worker(cur, _bufId)
     for i = cur, max_line do
+      if not vim.api.nvim_buf_is_loaded(buf) then
+        return
+      end
+      local curBufId = vim.b[buf].ansi_buf_id
+      if curBufId ~= _bufId then
+        return
+      end
+
       if i >= min_visble_line and i <= max_visble_line then
         goto continue
       end
@@ -71,7 +86,7 @@ function M.ansi_highlight()
 
       if i - cur > LINE_CHUNK and i + 1 <= max_line then
         vim.defer_fn(function()
-          ansi_highlight_worker(i + 1)
+          ansi_highlight_worker(i + 1, _bufId)
         end, 100)
         return
       end
@@ -84,10 +99,10 @@ function M.ansi_highlight()
       ansi_highlight_task(i)
     end
     vim.defer_fn(function()
-      ansi_highlight_worker(1)
+      ansi_highlight_worker(1, bufId)
     end, 100)
   else
-    ansi_highlight_worker(1)
+    ansi_highlight_worker(1, bufId)
   end
 
 end
