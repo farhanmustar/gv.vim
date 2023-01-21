@@ -24,6 +24,20 @@ function M.ansi_highlight()
 
   function ansi_highlight_task(line)
     local l = vim.fn.getbufoneline(buf, line)
+
+    local new_l, hi_list = ansi_highlight_line(l)
+
+    vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+    vim.fn.setbufline(buf, line, new_l)
+    vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+
+    for _, v in ipairs(hi_list) do
+      local prefix, s, e = v[1], v[2], v[3]
+      vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {line-1, s}, {line-1,e}, opts)
+    end
+  end
+
+  function ansi_highlight_line(l)
     local prev_hi = ''
     local prev_idx = ''
     local hi_list = {}
@@ -53,14 +67,25 @@ function M.ansi_highlight()
       prev_idx = s
       ::continue::
     end
+    return l, hi_list
+  end
 
-    vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-    vim.fn.setbufline(buf, line, l)
-    vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  function ansi_highlight_range(s, e)
+    local lines = vim.api.nvim_buf_get_lines(buf, s, e, false)
+    local new_lines = {}
+    local new_lines_hi = {}
+    for i, l in pairs(lines) do
+      local new_l, new_l_hi = ansi_highlight_line(l)
+      table.insert(new_lines, new_l)
+      table.insert(new_lines_hi, new_l_hi)
+    end
 
-    for _, v in ipairs(hi_list) do
-      local prefix, s, e = v[1], v[2], v[3]
-      vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {line-1, s}, {line-1,e}, opts)
+    vim.api.nvim_buf_set_lines(buf, s, e, false, new_lines)
+    for i, d in pairs(new_lines_hi) do
+      for _, v in ipairs(d) do
+        local prefix, col_s, col_e = v[1], v[2], v[3]
+        vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 1, col_s}, {i + s - 1, col_e}, opts)
+      end
     end
   end
 
@@ -95,9 +120,10 @@ function M.ansi_highlight()
   end
 
   if max_visble_line - min_visble_line > 0 then
-    for i = min_visble_line, max_visble_line do
-      ansi_highlight_task(i)
-    end
+    -- for i = min_visble_line, max_visble_line do
+    --   ansi_highlight_task(i)
+    -- end
+    ansi_highlight_range(min_visble_line, max_visble_line)
     vim.defer_fn(function()
       ansi_highlight_worker(1, bufId)
     end, 100)
