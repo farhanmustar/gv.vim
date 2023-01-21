@@ -38,21 +38,6 @@ function M.ansi_get_hi_group(ansi)
   return vim.fn.matchstr(ansi, '\\d\\zem')
 end
 
-function M.ansi_highlight_task(buf, line)
-  local l = vim.fn.getbufoneline(buf, line)
-
-  local new_l, hi_list = M.ansi_highlight_line(l)
-
-  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-  vim.fn.setbufline(buf, line, new_l)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-
-  for _, v in ipairs(hi_list) do
-    local prefix, s, e = v[1], v[2], v[3]
-    vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {line-1, s}, {line-1,e}, opts)
-  end
-end
-
 function M.ansi_highlight_line(l)
   local prev_hi = ''
   local prev_idx = ''
@@ -97,7 +82,10 @@ function M.ansi_highlight_range(buf, s, e)
     table.insert(new_lines_hi, new_l_hi)
   end
 
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(buf, s, e, false, new_lines)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+
   for i, d in pairs(new_lines_hi) do
     for _, v in ipairs(d) do
       local prefix, col_s, col_e = v[1], v[2], v[3]
@@ -107,32 +95,37 @@ function M.ansi_highlight_range(buf, s, e)
 end
 
 function M.ansi_highlight_worker(cur, max_line, min_visble_line, max_visble_line, buf, bufId)
-  for i = cur, max_line do
-    if not vim.api.nvim_buf_is_loaded(buf) then
-      return
-    end
-    local curBufId = vim.b[buf].ansi_buf_id
-    if curBufId ~= bufId then
-      return
-    end
+  if not vim.api.nvim_buf_is_loaded(buf) then
+    return
+  end
+  local curBufId = vim.b[buf].ansi_buf_id
+  if curBufId ~= bufId then
+    return
+  end
 
-    if i >= min_visble_line and i <= max_visble_line then
-      goto continue
-    end
+  local s = cur
+  local e = s + LINE_CHUNK
 
-    M.ansi_highlight_task(buf, i)
+  if s >= min_visble_line and s < max_visble_line then
+    s =  max_visble_line
+    e =  s + LINE_CHUNK
+  elseif e >= min_visble_line and e < max_visble_line then
+    e = min_visble_line - 1
 
-    if i >= max_line then
-      return
+    if e < s then
+      s = max_visble_line
+      e =  s + LINE_CHUNK
     end
+  end
 
-    if i - cur > LINE_CHUNK and i + 1 <= max_line then
-      vim.defer_fn(function()
-        M.ansi_highlight_worker(i + 1, max_line, min_visble_line, max_visble_line, buf, bufId)
-      end, 100)
-      return
-    end
-    ::continue::
+  e = e > max_line and max_line or e
+
+  M.ansi_highlight_range(buf, s, e)
+
+  if e <= max_line then
+    vim.defer_fn(function()
+      M.ansi_highlight_worker(e, max_line, min_visble_line, max_visble_line, buf, bufId)
+    end, 100)
   end
 end
 
