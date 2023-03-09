@@ -433,10 +433,13 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       call s:gl(bufnr(''), a:visual)
     else
       let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
-      let [opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
+      let [raw_opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
+
+      let opts2 = s:inject_reflog(raw_opts2)
+
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(root, ':t')
-      let bufname = repo_short_name.' '.join(log_opts)
+      let bufname = repo_short_name.' '.join(opts1 + raw_opts2 + paths1 + paths2)
       " compact bufname for default graph
       let bufname = substitute(bufname, '--branches --remotes --tags', '--brt', '')
 
@@ -476,6 +479,16 @@ function! s:decrease_width()
 
   let b:gv_comment_width -= 15
   call s:reload()
+endfunction
+
+function! s:inject_reflog(opts)
+  if len(a:opts) <= 0 || a:opts[0] !=? 'reflog'
+    return a:opts
+  endif
+  let reflogCount = system(FugitiveShellCommand(['reflog']) . ' | wc -l')
+  let reflogCount = str2nr(reflogCount)
+
+  return a:opts[1:] + map(range(reflogCount), {i, v -> 'HEAD@{' . string(v) . '}'})
 endfunction
 
 command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
