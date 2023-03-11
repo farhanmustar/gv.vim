@@ -264,11 +264,6 @@ function! s:fill(cmd)
 
   call winrestview(win_state)
 
-  " let start = reltime()
-  " call v:lua.require('gv').ansi_highlight()
-  " call s:ansi_highlight()
-  " echom "elapsed time:".reltimestr(reltime(start))
-  let b = bufnr('%')
   call s:visible_line_ansi_highlight()
   augroup GVANSIHI
        autocmd! * <buffer>
@@ -276,65 +271,6 @@ function! s:fill(cmd)
   augroup END
 
   setlocal nomodifiable
-endfunction
-
-function s:visible_line_ansi_highlight()
-  let gv_ansi_start = getbufvar('%', 'gv_ansi_start', -1)
-  let gv_ansi_end = getbufvar('%', 'gv_ansi_end', -1)
-
-  let ansi_start = line('w0')
-  let ansi_end = line('w$')
-
-  if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
-    call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
-  endif
-
-  call setbufvar('%', 'gv_ansi_start', ansi_start)
-  call setbufvar('%', 'gv_ansi_end', ansi_end)
-endfunction
-
-function! s:ansi_highlight()
-  " experimental ansi_highlight for single line mainly for git log tree.
-  for i in range(1, line('$'))
-    let l = getline(i)
-    let prev_hi = ''
-    let prev_idx = ''
-    let hi_list = []
-
-    let s = 0
-    while 1
-      let [m, s, e] = matchstrpos(l, '\e\[[0-9;]*[mK]', s)
-      if len(m) == 0
-        break
-      endif
-      if s == 0
-        let l = l[e:]
-      else
-        let l = l[:s-1] . l[e:]
-      endif
-
-      let cur_hi = s:ansi_hi_group(m)
-      if prev_hi == cur_hi
-        continue
-      endif
-
-      if len(prev_hi) > 0
-        call add(hi_list, [prev_hi, prev_idx, s])
-      endif
-
-      let prev_hi = cur_hi
-      let prev_idx = s
-    endwhile
-    call setline(i, l)
-
-    for [prefix, s, e] in hi_list
-      execute 'lua vim.highlight.range('.bufnr('%').','.s:ansi_hi_ns.',"gvAnsi'.prefix.'",{'.(i-1).','.s.'},{'.(i-1).','.e.'},{})'
-    endfor
-  endfor
-endfunction
-
-function! s:ansi_hi_group(ansi)
-  return matchstr(a:ansi, '\d\zem')
 endfunction
 
 function! s:ansi_syntax()
@@ -353,6 +289,21 @@ function! s:ansi_syntax()
   hi def link gvAnsi13 Comment
   hi def link gvAnsi14 Comment
   hi def link gvAnsi15 Comment
+endfunction
+
+function s:visible_line_ansi_highlight()
+  let gv_ansi_start = getbufvar('%', 'gv_ansi_start', -1)
+  let gv_ansi_end = getbufvar('%', 'gv_ansi_end', -1)
+
+  let ansi_start = line('w0')
+  let ansi_end = line('w$')
+
+  if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
+    call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
+  endif
+
+  call setbufvar('%', 'gv_ansi_start', ansi_start)
+  call setbufvar('%', 'gv_ansi_end', ansi_end)
 endfunction
 
 function! s:tracked(file)
