@@ -20,16 +20,16 @@ function M.ansi_highlight_visible(b)
 end
 
 function M.ansi_highlight_visible_range(buf, s, e)
-  local lines = vim.api.nvim_buf_get_lines(buf, s, e, false)
+  local lines = vim.api.nvim_buf_get_lines(buf, s - 1, e, false)
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
 
   for i, l in pairs(lines) do
     local new_l, new_l_hi = M.ansi_highlight_line(l)
     if next(new_l_hi) ~= nil then
-      vim.api.nvim_buf_set_lines(buf, i + s - 1, i + s - 1, false, {new_l})
+      vim.api.nvim_buf_set_lines(buf, i + s - 2, i + s - 1, false, {new_l})
       for _, v in ipairs(new_l_hi) do
         local prefix, col_s, col_e = v[1], v[2], v[3]
-        vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 1, col_s}, {i + s - 1, col_e}, opts)
+        vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 2, col_s}, {i + s - 2, col_e}, opts)
       end
     end
   end
