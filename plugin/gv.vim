@@ -265,11 +265,32 @@ function! s:fill(cmd)
   call winrestview(win_state)
 
   " let start = reltime()
-  call v:lua.require('gv').ansi_highlight()
+  " call v:lua.require('gv').ansi_highlight()
   " call s:ansi_highlight()
   " echom "elapsed time:".reltimestr(reltime(start))
+  let b = bufnr('%')
+  call s:visible_line_ansi_highlight()
+  augroup GVANSIHI
+       autocmd! * <buffer>
+       autocmd CursorMoved <buffer> call <SID>visible_line_ansi_highlight()
+  augroup END
 
   setlocal nomodifiable
+endfunction
+
+function s:visible_line_ansi_highlight()
+  let gv_ansi_start = getbufvar('%', 'gv_ansi_start', -1)
+  let gv_ansi_end = getbufvar('%', 'gv_ansi_end', -1)
+
+  let ansi_start = line('w0')
+  let ansi_end = line('w$')
+
+  if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
+    call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
+  endif
+
+  call setbufvar('%', 'gv_ansi_start', ansi_start)
+  call setbufvar('%', 'gv_ansi_end', ansi_end)
 endfunction
 
 function! s:ansi_highlight()

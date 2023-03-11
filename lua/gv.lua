@@ -34,6 +34,40 @@ function M.ansi_highlight()
 
 end
 
+function M.ansi_highlight_visible(b)
+  local max_line = vim.fn.line('$')
+
+  local min_visble_line = vim.fn.line('w0')
+  min_visble_line = min_visble_line < 1 and 1 or min_visble_line
+  local max_visble_line = vim.fn.line('w$')
+  max_visble_line = max_visble_line > max_line and max_line or max_visble_line
+
+  local buf = b == -1 or vim.fn.bufnr('%') and b
+
+  if max_visble_line - min_visble_line > 0 then
+    M.ansi_highlight_visible_range(buf, min_visble_line, max_visble_line)
+  end
+end
+
+function M.ansi_highlight_visible_range(buf, s, e)
+  local lines = vim.api.nvim_buf_get_lines(buf, s, e, false)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+
+  for i, l in pairs(lines) do
+    local new_l, new_l_hi = M.ansi_highlight_line(l)
+    if next(new_l_hi) ~= nil then
+      vim.api.nvim_buf_set_lines(buf, i + s - 1, i + s - 1, false, {new_l})
+      for _, v in ipairs(new_l_hi) do
+        local prefix, col_s, col_e = v[1], v[2], v[3]
+        vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 1, col_s}, {i + s - 1, col_e}, opts)
+      end
+    end
+  end
+
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+end
+
+
 function M.ansi_get_hi_group(ansi)
   return vim.fn.matchstr(ansi, '\\d\\zem')
 end
@@ -84,7 +118,6 @@ function M.ansi_highlight_range(buf, s, e)
 
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(buf, s, e, false, new_lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 
   for i, d in pairs(new_lines_hi) do
     for _, v in ipairs(d) do
@@ -92,6 +125,7 @@ function M.ansi_highlight_range(buf, s, e)
       vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 1, col_s}, {i + s - 1, col_e}, opts)
     end
   end
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
 function M.ansi_highlight_worker(cur, max_line, min_visble_line, max_visble_line, buf, bufId)
