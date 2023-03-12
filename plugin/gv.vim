@@ -264,6 +264,10 @@ function! s:fill(cmd)
 
   call winrestview(win_state)
 
+  " force rerender
+  call setbufvar('%', 'gv_ansi_start', -1)
+  call setbufvar('%', 'gv_ansi_end', -1)
+
   call s:visible_line_ansi_highlight()
   augroup GVANSIHI
        autocmd! * <buffer>
