@@ -315,9 +315,9 @@ endfunction
 function! s:log_opts(bang, visual, line1, line2, raw_option)
   if a:visual || a:bang
     call s:check_buffer(b:current_path)
-    return a:visual ? [['--color=never', printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--color=never', '--follow'], ['--', b:current_path]]
+    return a:visual ? [[printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--follow'], ['--', b:current_path]]
   endif
-  return a:raw_option ? [['--color', '--graph'], []] : [['--color', '--graph', '--branches', '--remotes', '--tags'], []]
+  return a:raw_option ? [['--graph'], []] : [['--graph', '--branches', '--remotes', '--tags'], []]
 endfunction
 
 function! s:list(bufname, log_opts)
@@ -475,14 +475,15 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       call s:check_buffer(b:current_path)
       call s:gl(bufnr(''), a:visual)
     else
-      let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
+      let [raw_opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
       let [raw_opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
 
+      let opts1 = s:inject_color(raw_opts1, a:bang, a:visual)
       let opts2 = s:inject_reflog(raw_opts2)
 
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(root, ':t')
-      let bufname = repo_short_name.' '.join(opts1 + raw_opts2 + paths1 + paths2)
+      let bufname = repo_short_name.' '.join(raw_opts1 + raw_opts2 + paths1 + paths2)
       " compact bufname for default graph
       let bufname = substitute(bufname, '--branches --remotes --tags', '--brt', '')
 
@@ -522,6 +523,14 @@ function! s:decrease_width()
 
   let b:gv_comment_width -= 15
   call s:reload()
+endfunction
+
+function! s:inject_color(opts, bang, visual)
+  if a:visual || a:bang
+    return ['--color=never'] + a:opts
+  endif
+
+  return ['--color'] + a:opts
 endfunction
 
 function! s:inject_reflog(opts)
