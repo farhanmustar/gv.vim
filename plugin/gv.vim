@@ -279,20 +279,13 @@ endfunction
 
 function! s:ansi_syntax()
   hi def link gvAnsi1 Keyword
-  hi def link gvAnsi2 Include
+  hi def link gvAnsi2 String
   hi def link gvAnsi3 Type
   hi def link gvAnsi4 Variable
   hi def link gvAnsi5 Constant
-  hi def link gvAnsi6 Define
+  hi def link gvAnsi6 Include
   hi def link gvAnsi7 Operator
-  hi def link gvAnsi8 Identifier
   hi def link gvAnsi9 Comment
-  hi def link gvAnsi10 Comment
-  hi def link gvAnsi11 Comment
-  hi def link gvAnsi12 Comment
-  hi def link gvAnsi13 Comment
-  hi def link gvAnsi14 Comment
-  hi def link gvAnsi15 Comment
 endfunction
 
 function s:visible_line_ansi_highlight()
