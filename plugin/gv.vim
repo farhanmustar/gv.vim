@@ -29,7 +29,6 @@ function! s:shrug()
 endfunction
 
 let s:begin = '[a-f0-9]\{4,}'
-let s:ansi_hi_ns = luaeval('vim.api.nvim_create_namespace("gvhi")')
 
 function! gv#sha(...)
   return matchstr(get(a:000, 0, getline('.')), s:begin)
@@ -173,6 +172,15 @@ function! s:syntax()
   hi def link diffFile    Type
   hi def link diffLine    Statement
 
+  hi def link gvAnsi1 Keyword
+  hi def link gvAnsi2 String
+  hi def link gvAnsi3 Type
+  hi def link gvAnsi4 Variable
+  hi def link gvAnsi5 Constant
+  hi def link gvAnsi6 Include
+  hi def link gvAnsi7 Operator
+  hi def link gvAnsi9 Comment
+
   setlocal conceallevel=1
   setlocal concealcursor=nvc
 endfunction
@@ -260,7 +268,6 @@ function! s:fill(cmd)
   silent normal! gg"_dG
   silent execute 'read' escape('!'.a:cmd, '%')
   normal! gg"_dd
-  call s:ansi_syntax()
 
   call winrestview(win_state)
 
@@ -275,17 +282,6 @@ function! s:fill(cmd)
   augroup END
 
   setlocal nomodifiable
-endfunction
-
-function! s:ansi_syntax()
-  hi def link gvAnsi1 Keyword
-  hi def link gvAnsi2 String
-  hi def link gvAnsi3 Type
-  hi def link gvAnsi4 Variable
-  hi def link gvAnsi5 Constant
-  hi def link gvAnsi6 Include
-  hi def link gvAnsi7 Operator
-  hi def link gvAnsi9 Comment
 endfunction
 
 function s:visible_line_ansi_highlight()
