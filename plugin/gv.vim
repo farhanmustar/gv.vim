@@ -28,7 +28,7 @@ function! s:shrug()
   call s:warn('¯\_(ツ)_/¯')
 endfunction
 
-let s:begin = '^[^a-f0-9]*\zs[a-f0-9]\+'
+let s:begin = '[a-f0-9]\{4,}'
 
 function! gv#sha(...)
   return matchstr(get(a:000, 0, getline('.')), s:begin)
@@ -129,6 +129,10 @@ function! s:syntax()
   setf GV
   syn clear
   syn match gvTree    /^[^a-f0-9]* / nextgroup=gvInfo
+  syn match gvAnsiIgnore1    /\e\[[0-9;]*[mK]|\e\[m/ conceal cchar=|
+  syn match gvAnsiIgnore2    /\e\[[0-9;]*[mK]\/\e\[m/ conceal cchar=/
+  syn match gvAnsiIgnore3    /\e\[[0-9;]*[mK]\\\e\[m/ conceal cchar=\
+  syn match gvAnsiIgnore4    /\e\[[0-9;]*[mK]_\e\[m/ conceal cchar=_
   syn match gvInfo    /[a-f0-9]\+ / contains=gvSha nextgroup=gvMetaMessage,gvMessage
   syn match gvSha     /[a-f0-9]\{6,}/ contained
   syn match gvMetaMessage /.* \ze(.\{-})$/ contained contains=gvAuthorMeta,gvGitHub,gvJira nextgroup=gvMeta
@@ -141,13 +145,13 @@ function! s:syntax()
   syn match gvTag     /(tag:[^)]\+)/ contained
   syn match gvGitHub  /\<#[0-9]\+\>/ contained
   syn match gvJira    /\<[A-Z]\+-[0-9]\+\>/ contained
-  hi def link gvTree   Comment
-  hi def link gvSha    Identifier
-  hi def link gvTag    Conditional
-  hi def link gvGitHub Label
-  hi def link gvJira   Label
-  hi def link gvMeta   Conditional
-  hi def link gvAuthor String
+  hi def link gvTree       Comment
+  hi def link gvSha        Identifier
+  hi def link gvTag        Conditional
+  hi def link gvGitHub     Label
+  hi def link gvJira       Label
+  hi def link gvMeta       Conditional
+  hi def link gvAuthor     String
   hi def link gvAuthorName Function
 
   syn match gvAdded     "^\W*\zsA\t.*"
@@ -167,6 +171,18 @@ function! s:syntax()
   hi def link diffRemoved Special
   hi def link diffFile    Type
   hi def link diffLine    Statement
+
+  hi def link gvAnsi1 Keyword
+  hi def link gvAnsi2 String
+  hi def link gvAnsi3 Type
+  hi def link gvAnsi4 Variable
+  hi def link gvAnsi5 Constant
+  hi def link gvAnsi6 Include
+  hi def link gvAnsi7 Operator
+  hi def link gvAnsi9 Comment
+
+  setlocal conceallevel=1
+  setlocal concealcursor=nvc
 endfunction
 
 function! s:maps()
@@ -252,8 +268,35 @@ function! s:fill(cmd)
   silent normal! gg"_dG
   silent execute 'read' escape('!'.a:cmd, '%')
   normal! gg"_dd
+
   call winrestview(win_state)
+
+  " force rerender
+  call setbufvar('%', 'gv_ansi_start', -1)
+  call setbufvar('%', 'gv_ansi_end', -1)
+
+  call s:visible_line_ansi_highlight()
+  augroup GVANSIHI
+       autocmd! * <buffer>
+       autocmd CursorMoved <buffer> call <SID>visible_line_ansi_highlight()
+  augroup END
+
   setlocal nomodifiable
+endfunction
+
+function s:visible_line_ansi_highlight()
+  let gv_ansi_start = getbufvar('%', 'gv_ansi_start', -1)
+  let gv_ansi_end = getbufvar('%', 'gv_ansi_end', -1)
+
+  let ansi_start = line('w0')
+  let ansi_end = line('w$')
+
+  if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
+    call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
+  endif
+
+  call setbufvar('%', 'gv_ansi_start', ansi_start)
+  call setbufvar('%', 'gv_ansi_end', ansi_end)
 endfunction
 
 function! s:tracked(file)
@@ -281,7 +324,7 @@ function! s:list(bufname, log_opts)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
-  let default_opts = ['--color=never', '--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
+  let default_opts = ['--format=format:%h %<('.comment_width.',trunc)%s (%aN, %ar) %d']
 
   let git_args = ['log'] + default_opts + a:log_opts
   let git_log_cmd = FugitiveShellCommand(git_args)
@@ -432,14 +475,15 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
       call s:check_buffer(b:current_path)
       call s:gl(bufnr(''), a:visual)
     else
-      let [opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
+      let [raw_opts1, paths1] = s:log_opts(a:bang, a:visual, a:line1, a:line2, a:raw_option)
       let [raw_opts2, paths2] = s:split_pathspec(gv#shellwords(a:args))
 
+      let opts1 = s:inject_color(raw_opts1, a:bang, a:visual)
       let opts2 = s:inject_reflog(raw_opts2)
 
       let log_opts = opts1 + opts2 + paths1 + paths2
       let repo_short_name = fnamemodify(root, ':t')
-      let bufname = repo_short_name.' '.join(opts1 + raw_opts2 + paths1 + paths2)
+      let bufname = repo_short_name.' '.join(raw_opts1 + raw_opts2 + paths1 + paths2)
       " compact bufname for default graph
       let bufname = substitute(bufname, '--branches --remotes --tags', '--brt', '')
 
@@ -479,6 +523,14 @@ function! s:decrease_width()
 
   let b:gv_comment_width -= 15
   call s:reload()
+endfunction
+
+function! s:inject_color(opts, bang, visual)
+  if a:visual || a:bang
+    return ['--color=never'] + a:opts
+  endif
+
+  return ['--color'] + a:opts
 endfunction
 
 function! s:inject_reflog(opts)
