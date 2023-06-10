@@ -24,12 +24,19 @@ function M.ansi_highlight_visible_range(buf, s, e)
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
 
   for i, l in pairs(lines) do
-    local new_l, new_l_hi = M.ansi_highlight_line(l)
+    local cur_col
+    if i + s - 1 == vim.fn.line('.') then
+      cur_col = vim.fn.col('.')
+    end
+    local new_l, new_l_hi, col_shift = M.ansi_highlight_line(l, cur_col)
     if next(new_l_hi) ~= nil then
       vim.api.nvim_buf_set_lines(buf, i + s - 2, i + s - 1, false, {new_l})
       for _, v in ipairs(new_l_hi) do
         local prefix, col_s, col_e = v[1], v[2], v[3]
         vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 2, col_s}, {i + s - 2, col_e}, opts)
+      end
+      if cur_col ~= nil then
+        vim.fn.setpos('.', {buf, i + s - 1, cur_col - col_shift})
       end
     end
   end
@@ -42,13 +49,14 @@ function M.ansi_get_hi_group(ansi)
   return vim.fn.matchstr(ansi, '\\d\\zem')
 end
 
-function M.ansi_highlight_line(l)
+function M.ansi_highlight_line(l, cur_col)
   local prev_hi = ''
   local prev_idx = ''
   local hi_list = {}
 
   local m, e
   local s = 0
+  local col_shift = 0
   while true do
     m, s, e = unpack(vim.fn.matchstrpos(l, '\\e\\[[0-9;]*[mK]', s))
     if #m == 0 then
@@ -58,6 +66,10 @@ function M.ansi_highlight_line(l)
       l = l:sub(e + 1)
     else
       l = l:sub(1, s) .. l:sub(e + 1)
+    end
+
+    if cur_col ~= nil and cur_col > e then
+      col_shift = col_shift + e - s
     end
 
     local cur_hi = M.ansi_get_hi_group(m)
@@ -73,7 +85,7 @@ function M.ansi_highlight_line(l)
     prev_idx = s
     ::continue::
   end
-  return l, hi_list
+  return l, hi_list, col_shift
 end
 
 return M
