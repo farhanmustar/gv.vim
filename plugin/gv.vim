@@ -291,8 +291,10 @@ function s:visible_line_ansi_highlight()
   let ansi_start = line('w0')
   let ansi_end = line('w$')
 
-  if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
-    call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
+  if has('nvim')
+    if ansi_start != gv_ansi_start || ansi_end != gv_ansi_end
+      call v:lua.require('gv').ansi_highlight_visible(bufnr('%'))
+    endif
   endif
 
   call setbufvar('%', 'gv_ansi_start', ansi_start)
@@ -526,7 +528,7 @@ function! s:decrease_width()
 endfunction
 
 function! s:inject_color(opts, bang, visual)
-  if a:visual || a:bang
+  if a:visual || a:bang || !has('nvim')
     return ['--color=never'] + a:opts
   endif
 
