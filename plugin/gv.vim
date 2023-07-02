@@ -302,6 +302,11 @@ function s:visible_line_ansi_highlight()
 endfunction
 
 function! s:tracked(file)
+  if a:file[:len('fugitive://') - 1] == 'fugitive://'
+    let l:fugitive_data = FugitiveParse(a:file)
+    return l:fugitive_data[1] == FugitiveGitDir()
+    " TODO: validate if file tracked in this commit.but if fugitive create it we should trust it for now
+  endif
   call system(FugitiveShellCommand(['ls-files', '--error-unmatch', a:file]))
   return !v:shell_error
 endfunction
@@ -315,11 +320,23 @@ function! s:check_buffer(current)
 endfunction
 
 function! s:log_opts(bang, visual, line1, line2, raw_option)
-  if a:visual || a:bang
-    call s:check_buffer(b:current_path)
-    return a:visual ? [[printf('-L%d,%d:%s', a:line1, a:line2, b:current_path)], []] : [['--follow'], ['--', b:current_path]]
+  if !a:visual && !a:bang
+    return a:raw_option ? [['--graph'], []] : [['--graph', '--branches', '--remotes', '--tags'], []]
   endif
-  return a:raw_option ? [['--graph'], []] : [['--graph', '--branches', '--remotes', '--tags'], []]
+
+  call s:check_buffer(b:current_path)
+  let l:current_path = b:current_path
+  let l:current_commit = ''
+  if b:current_path[:len('fugitive://') - 1] == 'fugitive://'
+    let l:fugitive_data = FugitiveParse(b:current_path)
+    let [l:current_commit, l:current_path] = split(l:fugitive_data[0], ':')
+  endif
+
+  if a:visual
+    return [[printf('-L%d,%d:%s', a:line1, a:line2, l:current_path)], empty(l:current_commit) ? [] : [l:current_commit]]
+  endif
+
+  return [['--follow'], (empty(l:current_commit) ? [] : [l:current_commit]) + ['--', l:current_path]]
 endfunction
 
 function! s:list(bufname, log_opts)
