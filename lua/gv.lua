@@ -32,8 +32,8 @@ function M.ansi_highlight_visible_range(buf, s, e)
     if next(new_l_hi) ~= nil then
       vim.api.nvim_buf_set_lines(buf, i + s - 2, i + s - 1, false, {new_l})
       for _, v in ipairs(new_l_hi) do
-        local prefix, col_s, col_e = v[1], v[2], v[3]
-        vim.highlight.range(buf, ns, 'gvAnsi'..prefix, {i + s - 2, col_s}, {i + s - 2, col_e}, opts)
+        local suffix, col_s, col_e = v[1], v[2], v[3]
+        vim.highlight.range(buf, ns, 'gvAnsi'..suffix, {i + s - 2, col_s}, {i + s - 2, col_e}, opts)
       end
       if cur_col ~= nil then
         vim.fn.setpos('.', {buf, i + s - 1, cur_col - col_shift})
@@ -46,7 +46,11 @@ end
 
 
 function M.ansi_get_hi_group(ansi)
-  return vim.fn.matchstr(ansi, '\\d\\zem')
+  -- \0[1;33m   <-- ansi example
+  local bold = vim.fn.matchstr(ansi, '1;')
+  -- only take the last number to represent color
+  local suffix = vim.fn.matchstr(ansi, '3\\zs\\d\\zem')
+  return bold ~= '' and suffix ~= '' and 'Bold' .. suffix or suffix
 end
 
 function M.ansi_highlight_line(l, cur_col)

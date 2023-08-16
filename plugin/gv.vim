@@ -181,6 +181,15 @@ function! s:syntax()
   hi def link gvAnsi7 Operator
   hi def link gvAnsi9 Comment
 
+  hi def link gvAnsiBold1 Keyword
+  hi def link gvAnsiBold2 String
+  hi def link gvAnsiBold3 Type
+  hi def link gvAnsiBold4 Variable
+  hi def link gvAnsiBold5 Constant
+  hi def link gvAnsiBold6 Include
+  hi def link gvAnsiBold7 Operator
+  hi def link gvAnsiBold9 Comment
+
   setlocal conceallevel=1
   setlocal concealcursor=nvc
 endfunction
