@@ -186,7 +186,6 @@ function! s:syntax()
 endfunction
 
 function! s:maps()
-  nnoremap <silent> <buffer> q    :call <sid>shrug()<cr>
   nnoremap <silent> <buffer> <nowait> gq :$wincmd w <bar> close<cr>
   nnoremap <silent> <buffer> gb   :call <sid>gbrowse()<cr>
   nnoremap <silent> <buffer> <cr> :call <sid>open(0)<cr>
