@@ -125,8 +125,12 @@ function! s:dot()
   return empty(sha) ? '' : ':Git  '.sha."\<s-left>\<left>"
 endfunction
 
-function! s:syntax()
-  setf GV
+function! s:syntax(visual)
+  if a:visual
+    setf git
+  else
+    setf GV
+  endif
   syn clear
   syn match gvTree    /^[^a-f0-9]* / nextgroup=gvInfo
   syn match gvAnsiIgnore1    /\e\[[0-9;]*[mK]|\e\[m/ conceal cchar=|
@@ -338,7 +342,7 @@ function! s:log_opts(bang, visual, line1, line2, raw_option)
   return [['--follow'], (empty(l:current_commit) ? [] : [l:current_commit]) + ['--', l:current_path]]
 endfunction
 
-function! s:list(bufname, log_opts)
+function! s:list(bufname, log_opts, visual)
   let b:gv_comment_width = get(b:, 'gv_comment_width', 75)
   let comment_width = b:gv_comment_width <= 0? 1: b:gv_comment_width
 
@@ -354,7 +358,7 @@ function! s:list(bufname, log_opts)
     doautocmd <nomodeline> User Fugitive
   endif
   call s:maps()
-  call s:syntax()
+  call s:syntax(a:visual)
 
   if !get(t:, 'gv_vim_tab', 0)
     let t:gv_vim_tab = 1  " mark tab
@@ -506,7 +510,7 @@ function! s:gv(bang, visual, line1, line2, args, raw_option) abort
 
       call s:chdir(root)
       call s:setup(bufname, FugitiveRemoteUrl())
-      call s:list(bufname, log_opts)
+      call s:list(bufname, log_opts, a:visual)
       call FugitiveDetect(@#)
     endif
 
