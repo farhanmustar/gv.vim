@@ -28,7 +28,7 @@ function! s:shrug()
   call s:warn('¯\_(ツ)_/¯')
 endfunction
 
-let s:begin = '[a-f0-9]\{4,}'
+let s:begin = '^[ *|\/]*\zs[a-f0-9]\{4,}'
 
 function! gv#sha(...)
   return matchstr(get(a:000, 0, getline('.')), s:begin)
