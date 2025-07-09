@@ -268,9 +268,9 @@ endfunction
 function! s:fill(cmd)
   setlocal modifiable
   let win_state = winsaveview()
-  silent normal! gg"_dG
+  %delete _
   silent execute 'read' escape('!'.a:cmd, '%')
-  normal! gg"_dd
+  0delete _
 
   call winrestview(win_state)
 
