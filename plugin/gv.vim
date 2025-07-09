@@ -558,3 +558,4 @@ command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GV
 command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVD call s:gv(<bang>0, <count>, <line1>, <line2>, '--date-order '.<q-args>, 0)
 command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVB call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 1)
 command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVS call s:gv(<bang>0, <count>, <line1>, <line2>, '--first-parent '.<q-args>, 1)
+command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GVR call s:gv(<bang>0, <count>, <line1>, <line2>, '--reflog '.<q-args>, 0)
