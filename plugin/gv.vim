@@ -34,6 +34,11 @@ function! gv#sha(...)
   return matchstr(get(a:000, 0, getline('.')), s:begin)
 endfunction
 
+function! s:findshaline()
+  " only for gvgit filetype
+  return search(s:begin, 'bcnW')
+endfunction
+
 function! s:move(flag)
   let [l, c] = searchpos(s:begin, a:flag)
   return l ? printf('%dG%d|', l, c) : ''
@@ -64,6 +69,20 @@ function! s:type(visual)
     return ['diff', FugitiveShellCommand(['diff', shas[-1], shas[0]])]
   endif
 
+  if &filetype == 'gvgit'
+    if getline('.') =~# '^\([+-]\|@@\|diff --git\)'
+      let sha = gv#sha(getline(s:findshaline()))
+      if empty(sha)
+        return [0, 0]
+      endif
+      let cfile = s:cfile(sha)
+      if empty(cfile)
+        return [0, 0]
+      endif
+      return ['cmd', 'Gedit '.cfile]
+    endif
+  endif
+
   if exists('b:git_origin')
     let syn = synIDattr(synID(line('.'), col('.'), 0), 'name')
     if syn == 'gvGitHub'
@@ -78,7 +97,21 @@ function! s:type(visual)
   if !empty(sha)
     return ['commit', FugitiveFind(sha)]
   endif
+
   return [0, 0]
+endfunction
+
+function! s:cfile(sha)
+  let f = @%
+  let s = FugitiveFind(a:sha)
+  " TODO: delete buffer incase of clash, need other method.
+  if buflisted(s)
+    silent exec 'bdelete '.s
+  endif
+  silent exec 'file '.s
+  let result = fugitive#Cfile()
+  silent exec 'file '.f
+  return result
 endfunction
 
 function! s:split(tab)
@@ -103,6 +136,11 @@ function! s:open(visual, ...)
     return s:shrug()
   elseif type == 'link'
     return s:browse(target)
+  elseif type == 'cmd'
+    call s:split(a:0)
+    silent execute target
+    wincmd p
+    return
   endif
 
   call s:split(a:0)
