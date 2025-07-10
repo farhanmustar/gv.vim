@@ -101,19 +101,6 @@ function! s:type(visual)
   return [0, 0]
 endfunction
 
-function! s:cfile(sha)
-  let f = @%
-  let s = FugitiveFind(a:sha)
-  " TODO: delete buffer incase of clash, need other method.
-  if buflisted(s)
-    silent exec 'bdelete '.s
-  endif
-  silent exec 'file '.s
-  let result = fugitive#Cfile()
-  silent exec 'file '.f
-  return result
-endfunction
-
 function! s:split(tab)
   if a:tab
     call s:tabnew()
@@ -533,6 +520,72 @@ function! s:inject_color(opts, bang, visual)
   endif
 
   return ['--color'] + a:opts
+endfunction
+
+function! s:cfile(sha)
+  let cur_bufnr = bufnr()
+  let f = @%
+  let s = FugitiveFind(a:sha)
+  let tar_bufnr = 0
+  let tar_winids = []
+  let tar_winids_state = []
+  if buflisted(s)
+    let tar_bufnr = bufnr(s)
+    let tar_winids = s:getwinids(tar_bufnr)
+    let tar_winids_state = s:getwinstate(tar_winids)
+    call s:windo(tar_winids, 'buffer '.cur_bufnr)
+    silent exec 'bwipeout '.tar_bufnr
+  endif
+  silent exec 'file '.s
+  let result = fugitive#Cfile()
+  silent exec 'file '.f
+  if tar_bufnr
+    call s:windo(tar_winids, 'Gedit '.s)
+    call s:restorewinstate(tar_winids, tar_winids_state)
+  endif
+  return result
+endfunction
+
+function! s:getwinids(tar_bufnr)
+  let winids = []
+  for win in getwininfo()
+    if win.bufnr == a:tar_bufnr
+      call add(winids, win.winid)
+    endif
+  endfor
+  return winids
+endfunction
+
+function! s:windo(winids, cmd)
+  let curwinid = win_getid()
+  for wid in a:winids
+    call win_gotoid(wid)
+    silent execute a:cmd
+  endfor
+  call win_gotoid(curwinid)
+endfunction
+
+function! s:getwinstate(winids)
+  let winids_state = []
+  let curwinid = win_getid()
+  for wid in a:winids
+    call win_gotoid(wid)
+    call add(winids_state, winsaveview())
+  endfor
+  call win_gotoid(curwinid)
+  return winids_state
+endfunction
+
+function! s:restorewinstate(winids, winids_state)
+  let curwinid = win_getid()
+
+  for i in range(0, len(a:winids) - 1)
+    let wid = a:winids[i]
+    let state = a:winids_state[i]
+    call win_gotoid(wid)
+    call winrestview(state)
+  endfor
+  call win_gotoid(curwinid)
 endfunction
 
 command! -bang -nargs=* -range=0 -complete=customlist,fugitive#CompleteObject GV call s:gv(<bang>0, <count>, <line1>, <line2>, <q-args>, 0)
